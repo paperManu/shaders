@@ -126,19 +126,19 @@ vec4 intersect(in vec3 o, in vec3 d, out float dist)
 /***************/
 float getSoftShadow(vec3 p, vec3 n, vec3 d, float a)
 {
+    float maxDist = 0.2;
+
     // We get a vector tangent to the surface
     vec3 x1 = vec3(-n.y, n.x, 0.0);
     // We rotate d around this tangent vector
     vec3 newd = (rtMat(x1, a) * vec4(d, 1.0)).xyz;
     // And we send rays from p along these new rays
     float varDist = 0.0;
-    float maxDist = -1.0;
     for(int i=0; i<4; i++)
     {
         float dist;
-        vec4 pos = intersect(p+1.0*n, newd, dist);
-        maxDist = max(maxDist, dist);
-        varDist += exp(dist);
+        vec4 pos = intersect(p+maxDist*n, newd, dist);
+        varDist += max(0.0, min(1.0, dist/maxDist));
 
         newd = (rtMat(n, HALFPI) * vec4(newd, 1.0)).xyz;
     }
