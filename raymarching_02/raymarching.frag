@@ -197,13 +197,14 @@ vec4 rm()
         color *= i;
 
         // Shadows...
-        vec4 shadow = intersect(point.xyz + 0.01*norm, -light, dist);
+        vec4 shadow = intersect(point.xyz + 0.2*norm, -light, dist);
         if(shadow.w > 0.05)
         {
-            // ... softened!
-            float ss = getSoftShadow(point.xyz, norm, -light, 0.1);
-
-            color *= ss;
+            color *= 0.5;
+        }
+        else
+        {
+            color *= 0.5 + 0.5*max(0.0, min(1.0, dist/0.2));
         }
     }
 
