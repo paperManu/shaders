@@ -21,7 +21,7 @@ const vec4 ambientColor = vec4(0.3);
 const vec4 lightColor = vec4(0.7);
 // Camera parameters
 const vec3 position = vec3(1.0, 3.0, -4.0);
-const vec3 target = vec3(0.0, 0.0, -1.0);
+const vec3 target = vec3(0.0, 0.5, -1.0);
 const float focal = 1.0;
 
 /***************/
@@ -90,24 +90,30 @@ vec2 map(vec3 p)
     pos = (trMat(vec3(2.0, -1.5, 0.0)) * vec4(p, 1.0)).xyz;
     pos = (rtMat(vec3(0.0, 1.0, 0.0), 0.15*vTimer) * vec4(pos, 1.0)).xyz;
     float box2 = sdBox(pos, vec3(1.0, 1.0, 2.0));
-
-    pos = (trMat(vec3(-2.0, -1.5, -1.0)) * vec4(p, 1.0)).xyz;
-    float sphere = sphere(pos, 1.0);
+    
+    pos = (trMat(vec3(-1.0, 1.0, 7.0)) * vec4(p, 1.0)).xyz;
+    pos = (rtMat(vec3(1.0, 0.0, 0.0), 0.1*vTimer) * vec4(pos, 1.0)).xyz;
+    float box3 = sdBox(pos, vec3(4.0, 1.0, 1.0));
+    
+    pos = (trMat(vec3(-2.0, -1.5, -3.0)) * vec4(p, 1.0)).xyz;
+    float sphere = sphere(pos, 2.0);
 
     float plane = hplane(p, -2.0);
 
     vec2 result = vec2(0.0);
     // Check which one is nearer, set a value to
     // chose the material later
-    result.x = min(min(min(box1, box2), plane), sphere);
+    result.x = min(min(min(min(box1, box2), plane), sphere), box3);
     if(box1 == result.x)
         result.y = 1.0;
     else if(box2 == result.x)
         result.y = 2.0;
     else if(plane == result.x)
         result.y = 3.0;
-    else if(sphere == result.x)
+    else if(box3 == result.x)
         result.y = 4.0;
+    else if(sphere == result.x)
+        result.y = 16.0;
 
     return result;
 }
@@ -129,7 +135,7 @@ vec4 intersect(in vec3 o, in vec3 d, out float dist)
     float eps = 0.001;
     dist = 1e+15;
     
-    for(float t=0.0; t<20.0;)
+    for(float t=0.0; t<40.0;)
     {
         vec2 h = map(o + t*d);
         dist = min(dist, h.x);
@@ -169,6 +175,8 @@ vec4 getMaterial(float index)
     else if(index == 3.0)
         m = vec4(0.6, 0.6, 0.6, 1.0);
     else if(index == 4.0)
+        m = vec4(0.0, 1.0, 0.0, 1.0);
+    else if(index == 16.0)
         m = vec4(0.9, 0.9, 0.9, 1.0);
 
     return m;
@@ -221,11 +229,11 @@ vec4 getColor(vec4 p, vec3 l, vec3 d)
         // Material
         vec4 m = getMaterial(p.w);
         // If the material is reflective
-        if(p.w == 4.0)
+        if(p.w == 16.0)
         {
             // We need to know what to reflect!
             vec3 newDir = reflect(d, norm);
-            vec4 newPoint = intersect(p.xyz+0.05*norm, newDir, dist);
+            vec4 newPoint = intersect(p.xyz+0.01*norm, newDir, dist);
             vec4 newColor = getReflectedColor(newPoint, l, newDir);
             m = m*newColor;
         }
@@ -244,7 +252,7 @@ vec4 getColor(vec4 p, vec3 l, vec3 d)
             // Specular reflection
             vec3 r = reflect(-l, norm);
             float spec = max(0.0, dot(r, d));
-            c.rgb += lightColor.rgb*pow(spec, 32);
+            c.rgb += lightColor.rgb*pow(spec, 64);
         }
     }
 
