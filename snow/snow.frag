@@ -20,10 +20,14 @@ out vec4 fragColor;
 const float shadowRadius = 0.3;
 const vec4 ambientColor = vec4(0.3);
 const vec4 lightColor = vec4(0.7);
+const float worldScale = 16.0;
 // Camera parameters
-const vec3 position = normalize(vec3(3.0, 2.0, -4.0)) * 7.0;
-const vec3 target = vec3(0.0, 0.0, 0.0);
-const float focal = 1.0;
+const vec3 position = normalize(vec3(5.0, 4.5, -4.0)) * 6.0;
+const vec3 target = vec3(2.0, 0.5, 0.0);
+const float focal = 1.5;
+
+// Const values
+float resFactor = (vResolution.x/vTexResolution.x + vResolution.y/vTexResolution.y)/2.0;
 
 /***************/
 // Displays the HUD, which is basically an FPS counter
@@ -70,25 +74,32 @@ float sdBox(vec3 p, vec3 b)
 }
 
 /***************/
-vec2 heightMap(vec3 p, vec3 d, vec3 b)
+vec2 heightMap(vec3 p, float d, vec3 b)
 {
     vec2 tex = vec2(p.x/b.x, p.z/b.y);
-    tex.x = max(min(tex.x, 1.0), 0.0);
-    tex.y = max(min(tex.y, 1.0), 0.0);
+    float i;
+    tex.x = modf(abs(tex.x), i); //max(min(tex.x, 1.0), 0.0);
+    tex.y = modf(abs(tex.y), i); //max(min(tex.y, 1.0), 0.0);
 
-    float h = texture2D(vTexMap, tex).r; // Height under the current position
+    float dist = modf(sqrt(d/focal)/resFactor, i);
+    float h = textureLod(vTexMap, tex, int(i)).r; // Height under the current position
 
     vec2 st;
-    st.x = (p.y - b.z - (1.0 - h)*4.0); // distance along y to the map
+    st.x = (p.y - b.z - (1.0 - h)*0.5); // distance along y to the map
     st.y = st.x * 0.5; 
     return st;
 }
 
 /***************/
-vec3 map(vec3 p, vec3 d)
+vec3 map(vec3 p)
 {
-    vec3 pos = (trMat(vec3(4.0, 0.0, 2.0)) * vec4(p, 1.0)).xyz;
-    vec2 snow = heightMap(pos, d, vec3(8.0, 8.0, 0.0));
+    mat4 tr = trMat(vec3(4.0, 0.0, 0.0));
+    
+    vec3 ori = (tr * vec4(position, 1.0)).xyz;
+    vec3 pos = (tr * vec4(p, 1.0)).xyz;
+    float dist = length(pos-ori)/worldScale;
+
+    vec2 snow = heightMap(pos, dist, vec3(worldScale, worldScale, 0.0));
 
     vec3 result = vec3(0.0);
     // Check which one is nearer, set a value to
@@ -103,11 +114,11 @@ vec3 map(vec3 p, vec3 d)
 /***************/
 vec3 getNorm(in vec3 p, in vec3 d)
 {
-    vec2 e = vec2(0.001, 0.0);
+    vec2 e = vec2(0.025, 0.0);
     vec3 n;
-    n.x = map(p+e.xyy, d).x - map(p-e.xyy, d).x;
-    n.y = map(p+e.yxy, d).x - map(p-e.yxy, d).x;
-    n.z = map(p+e.yyx, d).x - map(p-e.yyx, d).x;
+    n.x = map(p+e.xyy).x - map(p-e.xyy).x;
+    n.y = map(p+e.yxy).x - map(p-e.yxy).x;
+    n.z = map(p+e.yyx).x - map(p-e.yyx).x;
     return normalize(n);
 }
 
@@ -117,23 +128,20 @@ vec4 intersect(in vec3 o, in vec3 d, out float dist)
     float eps = 0.001;
     dist = 1e+15;
     float lh = 0.0;
-    float ly = 0.0;
+    float lt = 0.0;
     
-    for(float t=0.01; t<15.0;)
+    for(float t=0.01; t<60.0;)
     {
         vec3 pos = o + t*d;
-        vec3 h = map(pos, d);
+        vec3 h = map(pos);
         dist = min(dist, h.x);
-        //if(h.x < 0.0)
         if(h.x < max(1.0, t)*eps)
         {
-            return vec4(o+t*d, h.y);
-            //float realT = t - eps + eps*(lh-ly)/(-ly-h.x+lh);
-            //return vec4(o+realT*d, h.y);
+            float realT = lt + (lt-t)*lh/(lh-h.x);
+            return vec4(o+realT*d, h.y);
         }
-        lh = h.x+pos.y;
-        ly = pos.y;
-        //eps = max(1.0, t)*0.01;
+        lh = h.x;
+        lt = t;
         t += h.z;
     }
 
@@ -188,7 +196,7 @@ vec4 getColor(vec4 p, vec3 l, vec3 d)
         if(shadow.w > 0.0)
             c = m*ambientColor;
         else
-            c = m*ambientColor + m*lightColor*max(0.0, min(1.0, smoothstep(0.0, shadowRadius, dist)));
+            c = m*ambientColor + m*i*lightColor*max(0.0, min(1.0, smoothstep(0.0, shadowRadius, dist)));
     }
 
     return c;
@@ -201,7 +209,7 @@ vec4 rm()
 
     // We move the light for more awesomeness
     vec3 light = normalize(vec3(-1.0, -1.0, 1.0));
-    light = (rtMat(vec3(0.0, 1.0, 0.0), 0.5*vTimer) * vec4(light, 1.0)).xyz;
+    light = (rtMat(vec3(0.0, 1.0, 0.0), 0.2*vTimer) * vec4(light, 1.0)).xyz;
 
     // Here starts the real stuff
     vec3 dir = getCamera(position, target, focal);
