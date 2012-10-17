@@ -18,8 +18,8 @@ out vec4 fragColor;
 
 // Global parameters
 const float shadowRadius = 0.3;
-const vec4 ambientColor = vec4(0.7);
-const vec4 lightColor = vec4(1.0);
+const vec4 ambientColor = vec4(0.5);
+const vec4 lightColor = vec4(0.5);
 const float worldScale = 16.0;
 // Camera parameters
 const vec3 position = normalize(vec3(5.0, 2.0, -4.0)) * 6.0;
@@ -181,7 +181,7 @@ float sss(vec3 p, vec3 n, float d, float i)
 	float o;
 	for (o=0.;i>0.;i--)
     {
-		o+=(i*d+map(p+n*i*d).x)/exp2(i);
+		o+=(i*d+map(p-n*i*d).x)/exp2(i);
 	}
 	return o;
 }
@@ -215,17 +215,13 @@ vec4 getColor(vec4 p, vec3 l, vec3 d)
 
         // sss and ao
         float ao = ao(p.xyz, norm, 0.5, 4.0);
-        float sss = sss(p.xyz, norm, 0.8, 4.0);
-        m = m*sss*ao*i;
+        float sss = sss(p.xyz, norm, 0.1, 6.0);
 
         // Shadows...
         vec4 shadow = intersect(p.xyz - shadowRadius*l, -l, dist);
-        if(shadow.w > 0.0)
-            c = m*ambientColor;
-        else
-            c = m*ambientColor + m*lightColor*max(0.0, min(1.0, smoothstep(0.0, shadowRadius, dist)));
+        c = (1 + sss*4.0)*m*i*ao*ambientColor + step(0.0, shadow.w)*m*lightColor*max(0.0, min(1.0, smoothstep(0.0, shadowRadius, dist)));
         
-        c = m*ambientColor;
+        //c = (1+sss*8.0)*m*ambientColor;
     }
 
     return c;

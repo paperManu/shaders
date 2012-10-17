@@ -173,7 +173,7 @@ float sss(vec3 p, vec3 n, float d, float i)
 	float o;
 	for (o=0.;i>0.;i--)
     {
-		o+=(i*d+map(p+n*i*d).x)/exp2(i);
+		o+=(i*d+map(p-n*i*d).x)/exp2(i);
 	}
 	return o;
 }
