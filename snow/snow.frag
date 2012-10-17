@@ -18,12 +18,12 @@ out vec4 fragColor;
 
 // Global parameters
 const float shadowRadius = 0.3;
-const vec4 ambientColor = vec4(0.3);
-const vec4 lightColor = vec4(0.7);
+const vec4 ambientColor = vec4(0.7);
+const vec4 lightColor = vec4(1.0);
 const float worldScale = 16.0;
 // Camera parameters
-const vec3 position = normalize(vec3(5.0, 4.5, -4.0)) * 6.0;
-const vec3 target = vec3(2.0, 0.5, 0.0);
+const vec3 position = normalize(vec3(5.0, 2.0, -4.0)) * 6.0;
+const vec3 target = vec3(2.0, 1.0, 0.0);
 const float focal = 1.5;
 
 // Const values
@@ -85,7 +85,7 @@ vec2 heightMap(vec3 p, float d, vec3 b)
     float h = textureLod(vTexMap, tex, int(i)).r; // Height under the current position
 
     vec2 st;
-    st.x = (p.y - b.z - (1.0 - h)*0.5); // distance along y to the map
+    st.x = (p.y - b.z - h*0.5); // distance along y to the map
     st.y = st.x * 0.5; 
     return st;
 }
@@ -94,9 +94,10 @@ vec2 heightMap(vec3 p, float d, vec3 b)
 vec3 map(vec3 p)
 {
     mat4 tr = trMat(vec3(4.0, 0.0, 0.0));
+    mat4 rt = rtMat(vec3(0.0, 1.0, 0.0), 0.2*vTimer);
     
-    vec3 ori = (tr * vec4(position, 1.0)).xyz;
-    vec3 pos = (tr * vec4(p, 1.0)).xyz;
+    vec3 ori = (tr * rt * vec4(position, 1.0)).xyz;
+    vec3 pos = (tr * rt * vec4(p, 1.0)).xyz;
     float dist = length(pos-ori)/worldScale;
 
     vec2 snow = heightMap(pos, dist, vec3(worldScale, worldScale, 0.0));
@@ -164,13 +165,35 @@ vec3 getCamera(in vec3 p, in vec3 t, in float f)
 }
 
 /***************/
+float ao(vec3 p, vec3 n, float d, float i)
+{
+    float o;
+    for(o=1.0; i>0; i--)
+    {
+        o -= (i*d-map(p+n*i*d).x)/exp2(i);
+    }
+    return o;
+}
+
+/***************/
+float sss(vec3 p, vec3 n, float d, float i)
+{
+	float o;
+	for (o=0.;i>0.;i--)
+    {
+		o+=(i*d+map(p+n*i*d).x)/exp2(i);
+	}
+	return o;
+}
+
+/***************/
 vec4 getMaterial(float index)
 {
     vec4 m = vec4(0.0, 0.0, 0.0, 1.0);
     if(index == 1.0)
         m = vec4(1.0, 0.0, 0.0, 1.0);
     else if(index == 32.0)
-        m = vec4(0.9, 0.9, 0.9, 1.0);
+        m = vec4(1.0, 1.0, 1.0, 1.0);
 
     return m;
 }
@@ -189,14 +212,20 @@ vec4 getColor(vec4 p, vec3 l, vec3 d)
         vec4 m = getMaterial(p.w);
         // Lighting
         float i = max(0.2, -dot(norm, l));
-        c *= i;
+
+        // sss and ao
+        float ao = ao(p.xyz, norm, 0.5, 4.0);
+        float sss = sss(p.xyz, norm, 0.8, 4.0);
+        m = m*sss*ao*i;
 
         // Shadows...
         vec4 shadow = intersect(p.xyz - shadowRadius*l, -l, dist);
         if(shadow.w > 0.0)
             c = m*ambientColor;
         else
-            c = m*ambientColor + m*i*lightColor*max(0.0, min(1.0, smoothstep(0.0, shadowRadius, dist)));
+            c = m*ambientColor + m*lightColor*max(0.0, min(1.0, smoothstep(0.0, shadowRadius, dist)));
+        
+        c = m*ambientColor;
     }
 
     return c;
