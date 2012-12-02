@@ -213,9 +213,9 @@ vec4 getColor(vec4 p, vec3 l, vec3 d)
 
         // Ambient occlusion
         float ao = ao(p.xyz, norm, 0.3, 8.0);
-        float sss = sss(p.xyz, norm, 0.1, 4.0);
+        float sss = sss(p.xyz, norm, 0.2, 4.0);
 
-        c = m*ambientColor*ao;
+        c = m*ambientColor*ao + m*ambientColor*sss;
     }
 
     return c;

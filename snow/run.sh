@@ -1,2 +1,2 @@
 #! /bin/bash
-shaderomatic -s snow -i heightmap.jpg --swap 2
+shaderomatic -s snow -i heightmap.jpg --swap 0

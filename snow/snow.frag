@@ -21,9 +21,10 @@ const float shadowRadius = 0.3;
 const vec4 ambientColor = vec4(0.5);
 const vec4 lightColor = vec4(0.5);
 const float worldScale = 16.0;
+const float height = 0.75;
 // Camera parameters
-const vec3 position = normalize(vec3(5.0, 2.0, -4.0)) * 6.0;
-const vec3 target = vec3(2.0, 1.0, 0.0);
+const vec3 position = vec3(0.0, 5.0, 0.0);
+const vec3 target = vec3(10.0, 0.5, 0.0);
 const float focal = 1.5;
 
 // Const values
@@ -74,18 +75,17 @@ float sdBox(vec3 p, vec3 b)
 }
 
 /***************/
-vec2 heightMap(vec3 p, float d, vec3 b)
+vec2 heightMap(vec3 p, vec3 b)
 {
     vec2 tex = vec2(p.x/b.x, p.z/b.y);
     float i;
     tex.x = modf(abs(tex.x), i); //max(min(tex.x, 1.0), 0.0);
     tex.y = modf(abs(tex.y), i); //max(min(tex.y, 1.0), 0.0);
 
-    float dist = modf(sqrt(d/focal)/resFactor, i);
     float h = textureLod(vTexMap, tex, int(i)).r; // Height under the current position
 
     vec2 st;
-    st.x = (p.y - b.z - h*0.5); // distance along y to the map
+    st.x = (p.y - b.z - h*height); // distance along y to the map
     st.y = st.x * 0.5; 
     return st;
 }
@@ -93,14 +93,12 @@ vec2 heightMap(vec3 p, float d, vec3 b)
 /***************/
 vec3 map(vec3 p)
 {
-    mat4 tr = trMat(vec3(4.0, 0.0, 0.0));
+    mat4 tr = trMat(vec3(0.0, 0.0, 0.0));
     mat4 rt = rtMat(vec3(0.0, 1.0, 0.0), 0.2*vTimer);
     
-    vec3 ori = (tr * rt * vec4(position, 1.0)).xyz;
-    vec3 pos = (tr * rt * vec4(p, 1.0)).xyz;
-    float dist = length(pos-ori)/worldScale;
+    vec3 pos = (rt * vec4(p, 1.0)).xyz;
 
-    vec2 snow = heightMap(pos, dist, vec3(worldScale, worldScale, 0.0));
+    vec2 snow = heightMap(pos, vec3(worldScale, worldScale, 0.0));
 
     vec3 result = vec3(0.0);
     // Check which one is nearer, set a value to
@@ -131,7 +129,13 @@ vec4 intersect(in vec3 o, in vec3 d, out float dist)
     float lh = 0.0;
     float lt = 0.0;
     
-    for(float t=0.01; t<60.0;)
+    // Raytrace the first ray if we are above the height map
+    float start = 0.01;
+    if(abs(d.y) > 0.001 && o.y > height)
+        start = (o.y-height)/d.y;
+    start = max(start, 0.01);
+
+    for(float t=start; t<60.0;)
     {
         vec3 pos = o + t*d;
         vec3 h = map(pos);
