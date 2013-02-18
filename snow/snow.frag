@@ -199,6 +199,19 @@ vec3 getSphericalCamera()
 }
 
 /***************/
+vec3 getCameraFromSphere()
+{
+    vec3 pix = vec3(finalTexCoord.x*2*PI, finalTexCoord.y*PI-HALFPI, 0.0);
+    vec3 dir;
+
+    dir.x = cos(pix.x)*cos(pix.y);
+    dir.z = sin(pix.x)*cos(pix.y);
+    dir.y = sin(pix.y);
+
+    return dir;
+}
+
+/***************/
 float ao(vec3 p, vec3 n, float d, float i)
 {
     float o;

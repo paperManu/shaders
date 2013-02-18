@@ -1,6 +1,7 @@
 #version 150 core
 
-#define HALFPI 1.5707963268 
+#define HALFPI  1.5707963268 
+#define PI      3.1415926535
 
 uniform sampler2D vTexMap;
 uniform sampler2D vHUDMap;
@@ -17,8 +18,9 @@ out vec4 fragColor;
 
 // Global parameters
 const float shadowRadius = 0.3;
-const vec4 ambientColor = vec4(0.9);
+const vec4 ambientColor = vec4(0.2);
 const vec4 lightColor = vec4(0.7);
+const vec4 fogColor = vec4(0.0, 0.0, 0.1, 1.0);
 // Camera parameters
 const vec3 position = normalize(vec3(4.0, 3.0, -4.0))*5.0;
 const vec3 target = vec3(0.0, 0.0, 0.0);
@@ -68,10 +70,9 @@ float sphere(vec3 p, float r)
 }
 
 /***************/
-float sdBox(vec3 p, vec3 b)
+float sdBox(vec3 p, vec3 b, float r)
 {
-    vec3 d = abs(p)-b;
-    return min(max(d.x, max(d.y, d.z)), 0.0) + length(max(d, 0.0));
+    return length(max(abs(p-r)-b+r, 0.0))-r;
 }
 
 /***************/
@@ -83,29 +84,18 @@ float hplane(vec3 p, float h)
 /***************/
 vec2 map(vec3 p)
 {
-    vec3 pos = (rtMat(vec3(1.0, 0.0, 0.0), 0.0) * vec4(p, 1.0)).xyz;
-    float box1 = sdBox(pos, vec3(2.0, 1.0, 1.0));
+    vec3 rep = vec3(2.82);
+    vec3 q = mod(p,rep) - 0.5*rep;
+    q.y = p.y;
 
-    pos = (rtMat(vec3(0.0, 1.0, 0.0), 0.0) * vec4(p, 1.0)).xyz;
-    float box2 = sdBox(pos, vec3(1.0, 1.0, 2.0));
-
-    pos = (trMat(vec3(0.0, -2.0, 0.0)) * vec4(p, 1.0)).xyz;
-    float sphere = sphere(pos, 1.0);
-
-    float plane = hplane(p, -0.9);
+    vec3 pos = (trMat(vec3(0.0, 2.0, 0.0)) * rtMat(vec3(0.0, 1.0, 0.0), vTimer) * vec4(q, 1.0)).xyz;
+    float box1 = sdBox(pos, vec3(1.0, 1.0, 1.0), 0.05);
 
     vec2 result = vec2(0.0);
     // Check which one is nearer, set a value to
     // chose the material later
-    result.x = min(min(min(box1, box2), plane), sphere);
-    if(box1 == result.x)
-        result.y = 1.0;
-    else if(box2 == result.x)
-        result.y = 2.0;
-    else if(plane == result.x)
-        result.y = 3.0;
-    else if(sphere == result.x)
-        result.y = 4.0;
+    result.x = box1;
+    result.y = 1.0;
 
     return result;
 }
@@ -137,12 +127,25 @@ vec3 getCamera(in vec3 p, in vec3 t, in float f)
 }
 
 /***************/
+vec3 getCameraFromSphere()
+{
+    vec3 pix = vec3(finalTexCoord.x*2*PI, finalTexCoord.y*PI-HALFPI, 0.0);
+    vec3 dir;
+
+    dir.x = cos(pix.x)*cos(pix.y);
+    dir.z = sin(pix.x)*cos(pix.y);
+    dir.y = sin(pix.y);
+
+    return dir;
+}
+
+/***************/
 vec4 intersect(in vec3 o, in vec3 d, out float dist)
 {
-    float eps = 0.001;
+    float eps = 0.0001;
     dist = 1e+15;
     
-    for(float t=0.0; t<40.0;)
+    for(float t=0.0; t<50.0;)
     {
         vec2 h = map(o + t*d);
         dist = min(dist, h.x);
@@ -150,7 +153,7 @@ vec4 intersect(in vec3 o, in vec3 d, out float dist)
         {
             return vec4(o+t*d, h.y);
         }
-        t += h.x;
+        t += h.x/4.0;
     }
 
     return vec4(0.0);
@@ -183,7 +186,7 @@ vec4 getMaterial(float index)
 {
     vec4 m = vec4(0.0, 0.0, 0.0, 1.0);
     if(index == 1.0)
-        m = vec4(1.0, 0.0, 0.0, 1.0);
+        m = vec4(0.8, 0.8, 0.9, 1.0);
     else if(index == 2.0)
         m = vec4(0.0, 0.0, 1.0, 1.0);
     else if(index == 3.0)
@@ -209,16 +212,25 @@ vec4 getColor(vec4 p, vec3 l, vec3 d)
 
         // Lighting
         float i = max(0.2, -dot(norm, l));
-        c *= i;
 
         // Ambient occlusion
-        float ao = ao(p.xyz, norm, 0.3, 16.0);
+        float ao = ao(p.xyz, norm, 0.6, 16.0);
         //float sss = sss(p.xyz, norm, 0.2, 4.0);
 
-        c = m*ambientColor*ao + m*ambientColor*sss;
+        //c = m*ambientColor*ao + m*ambientColor*sss;
+        c = m*ambientColor*ao + m*vec4(vec3(i), 1.0);
     }
 
     return c;
+}
+
+/***************/
+vec4 getFog(vec4 p, float d)
+{
+    float dist = length(p);
+    float f = pow(min(1.0, dist/d), 0.5);
+    vec4 fog = (1-f)*vec4(1.0, 1.0, 1.0, 1.0) + f*fogColor;
+    return fog;
 }
 
 /***************/
@@ -238,6 +250,7 @@ vec4 rm()
     vec4 point = intersect(position, dir, dist);
 
     color = getColor(point, light, dir);
+    color *= getFog(point, 40);
 
     return color;
 }
