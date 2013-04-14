@@ -23,9 +23,11 @@ const vec4 lightColor = vec4(0.5);
 const float worldScale = 16.0;
 const float height = 0.75;
 // Camera parameters
-const vec3 position = vec3(0.0, 5.0, 0.0);
-const vec3 target = vec3(10.0, 0.5, 0.0);
+const vec3 position = vec3(0.0, 1.0, 0.0);
+const vec3 target = vec3(0.001, 0.0, 0.0);
 const float focal = 1.5;
+// Spherical camera parameters
+const float fov = 230.0;
 
 // Const values
 float resFactor = (vResolution.x/vTexResolution.x + vResolution.y/vTexResolution.y)/2.0;
@@ -169,6 +171,47 @@ vec3 getCamera(in vec3 p, in vec3 t, in float f)
 }
 
 /***************/
+vec3 getSphericalCamera()
+{
+    vec3 pix = vec3(finalTexCoord*2.0-1.0, 0);
+    float squaredDistToCenter = pix.x*pix.x + pix.y*pix.y;
+    float distToCenter = sqrt(squaredDistToCenter)*HALFPI;
+    float sinDistToCenter = sin(distToCenter*fov/180);
+
+    float beta = 0.0;
+    if (pix.x > 0 && pix.y > 0)
+        beta = atan(pix.y/pix.x);
+    else if (pix.x < 0 && pix.y > 0)
+        beta = 2*HALFPI - atan(pix.y/(-pix.x));
+    else if (pix.x < 0 && pix.y < 0)
+        beta = 2*HALFPI + atan(pix.y/pix.x);
+    else
+        beta = 4*HALFPI - atan(pix.y/(-pix.x));
+
+    float x,y,z;
+    x = sinDistToCenter*cos(beta);
+    y = sinDistToCenter*sin(beta);
+    z = cos(distToCenter*fov/180);
+
+    vec3 dir = vec3(x, z, y);
+
+    return dir;
+}
+
+/***************/
+vec3 getCameraFromSphere()
+{
+    vec3 pix = vec3(finalTexCoord.x*2*PI, finalTexCoord.y*PI-HALFPI, 0.0);
+    vec3 dir;
+
+    dir.x = cos(pix.x)*cos(pix.y);
+    dir.z = sin(pix.x)*cos(pix.y);
+    dir.y = sin(pix.y);
+
+    return dir;
+}
+
+/***************/
 float ao(vec3 p, vec3 n, float d, float i)
 {
     float o;
@@ -234,20 +277,23 @@ vec4 getColor(vec4 p, vec3 l, vec3 d)
 /***************/
 vec4 rm()
 {
-    vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 color = vec4(0.95, 0.95, 1.0, 1.0);
 
     // We move the light for more awesomeness
     vec3 light = normalize(vec3(-1.0, -1.0, 1.0));
     light = (rtMat(vec3(0.0, 1.0, 0.0), 0.2*vTimer) * vec4(light, 1.0)).xyz;
 
     // Here starts the real stuff
-    vec3 dir = getCamera(position, target, focal);
+    //vec3 dir = getCamera(position, target, focal);
+    vec3 dir = getSphericalCamera();
 
     // March on the ray!
     float dist;
     vec4 point = intersect(position, dir, dist);
 
-    color = getColor(point, light, dir);
+    color *= getColor(point, light, dir);
+
+    //color = vec4(dir.x, dir.y, dir.z, 1.0);
 
     return color;
 }
