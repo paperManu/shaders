@@ -68,6 +68,12 @@ float sphere(vec3 p, float r)
 }
 
 /***************/
+float sdCylinder(vec3 p, vec3 c)
+{
+    return length(p.xz - c.xy) - c.z;
+}
+
+/***************/
 float sdBox(vec3 p, vec3 b)
 {
     vec3 d = abs(p)-b;

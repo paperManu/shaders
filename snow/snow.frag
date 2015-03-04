@@ -1,5 +1,6 @@
 #version 150 core
-
+ 
+#define PI 3.141592653589793
 #define HALFPI 1.5707963268 
 
 uniform sampler2D vTexMap;
@@ -23,8 +24,8 @@ const vec4 lightColor = vec4(0.5);
 const float worldScale = 16.0;
 const float height = 0.75;
 // Camera parameters
-const vec3 position = vec3(0.0, 1.0, 0.0);
-const vec3 target = vec3(0.001, 0.0, 0.0);
+const vec3 position = vec3(-1.0, 4.5, 0.0);
+const vec3 target = vec3(-2.0, 3.0, 0.0);
 const float focal = 1.5;
 // Spherical camera parameters
 const float fov = 230.0;
@@ -96,7 +97,7 @@ vec2 heightMap(vec3 p, vec3 b)
 vec3 map(vec3 p)
 {
     mat4 tr = trMat(vec3(0.0, 0.0, 0.0));
-    mat4 rt = rtMat(vec3(0.0, 1.0, 0.0), 0.2*vTimer);
+    mat4 rt = rtMat(vec3(0.0, 1.0, 0.0), 0.7);
     
     vec3 pos = (rt * vec4(p, 1.0)).xyz;
 
@@ -281,11 +282,11 @@ vec4 rm()
 
     // We move the light for more awesomeness
     vec3 light = normalize(vec3(-1.0, -1.0, 1.0));
-    light = (rtMat(vec3(0.0, 1.0, 0.0), 0.2*vTimer) * vec4(light, 1.0)).xyz;
+    light = (rtMat(vec3(0.0, 1.0, 0.0), 0.2) * vec4(light, 1.0)).xyz;
 
     // Here starts the real stuff
-    //vec3 dir = getCamera(position, target, focal);
-    vec3 dir = getSphericalCamera();
+    vec3 dir = getCamera(position, target, focal);
+    //vec3 dir = getSphericalCamera();
 
     // March on the ray!
     float dist;
