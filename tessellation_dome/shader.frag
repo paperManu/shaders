@@ -14,6 +14,7 @@ uniform int vPass;
 
 in TES_OUT
 {
+    vec3 vertex;
     vec2 texCoord;
     vec3 normal;
 } tes_out;
@@ -49,6 +50,8 @@ void main(void)
     if (vPass == 0)
     {
         fragColor = texture2D(vTexMap, tes_out.texCoord);
+        //fragColor = vec4(1.0);
+        //fragColor.rgb = (tes_out.vertex + vec3(1.0)) / 2.0;
     }
     else
     {
