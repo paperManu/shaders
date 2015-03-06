@@ -87,6 +87,7 @@ vec4 toSphere(in vec4 v)
     o.y = theta * sin(phi);
     o.y /= PI;
     o.x /= PI;
+    o.z = 0.5;
 
     return o;
 }
