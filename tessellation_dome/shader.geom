@@ -7,7 +7,7 @@
 #define FAR 100.0
 
 #define STEREO 1
-#define BASELINE 5
+#define BASELINE 1
 #define RADIUS 10
 
 // Uniforms and inputs
@@ -141,39 +141,42 @@ void main()
     vertices[1] = gl_in[1].gl_Position;
     vertices[2] = gl_in[2].gl_Position;
 
+    vec4[3] domeVertices;
+    domeVertices = vertices;
+
     if (vPass == 0)
     {
-        toSphere(vertices[0]);
-        toSphere(vertices[1]);
-        toSphere(vertices[2]);
+        toSphere(domeVertices[0]);
+        toSphere(domeVertices[1]);
+        toSphere(domeVertices[2]);
 
         vec2 center = vec2(0.0);
         if (STEREO == 1 && gl_InvocationID == 0)
             center.x = -0.5;
         else if (STEREO == 1 && gl_InvocationID == 1)
             center.x = 0.5;
-        if (length(vertices[0].xy - center) > 1.0 || length(vertices[1].xy - center) > 1.0 || length(vertices[2].xy - center) > 1.0)
+        if (length(domeVertices[0].xy - center) > 1.0 || length(domeVertices[1].xy - center) > 1.0 || length(domeVertices[2].xy - center) > 1.0)
             return;
 
         for (int i = 0; i < 3; ++i)
-            if (!doEmitVertex(vertices[i]))
+            if (!doEmitVertex(domeVertices[i]))
                 return;
     }
 
-    gl_Position = vertices[0];
+    gl_Position = domeVertices[0];
     geom_out.texCoord = tes_out[0].texCoord;
     geom_out.vertex = tes_out[0].vertex;
     geom_out.normal = normalize(cross((vertices[1] - vertices[0]).xyz, (vertices[2] - vertices[0]).xyz));
     EmitVertex();
 
-    gl_Position = vertices[1];
+    gl_Position = domeVertices[1];
     geom_out.texCoord = tes_out[1].texCoord;
     geom_out.vertex = tes_out[1].vertex;
     geom_out.normal = tes_out[2].normal;
     geom_out.normal = normalize(cross((vertices[1] - vertices[0]).xyz, (vertices[2] - vertices[0]).xyz));
     EmitVertex();
 
-    gl_Position = vertices[2];
+    gl_Position = domeVertices[2];
     geom_out.texCoord = tes_out[2].texCoord;
     geom_out.vertex = tes_out[2].vertex;
     geom_out.normal = tes_out[2].normal;

@@ -19,7 +19,7 @@ in GEOM_OUT
     vec3 normal;
 } geom_out;
 
-out vec4 fragColor;
+layout (location = 0) out vec4 fragColor;
 
 /***************/
 // Displays the HUD, which is basically an FPS counter
@@ -57,7 +57,7 @@ void main(void)
         vec3 N = geom_out.normal;
         vec3 L = normalize(vec3(sin(vTimer), cos(vTimer * 1.5), 1.0));
         float df = abs(dot(N, L));
-        fragColor.rgb = vec3(0.3, 0.0, 0.0) + fragColor.rgb * df * vec3(0.6, 0.6, 0.7);
+        fragColor.rgb = vec3(0.3, 0.0, 0.0) + fragColor.rgb * df * vec3(0.3, 0.9, 0.7);
     }
     else
     {
