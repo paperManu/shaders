@@ -39,11 +39,11 @@ void main(void)
             float faceDistance = length(center);
 
             gl_TessLevelInner[0] = 3.0 / (faceDistance / (l1 + l2 + l3));
-            gl_TessLevelOuter[0] = 8.0 / (d2 / l2); //length((p1 + p2) / 2.0);
-            gl_TessLevelOuter[1] = 8.0 / (d3 / l3); //length((p2 + p0) / 2.0);
-            gl_TessLevelOuter[2] = 8.0 / (d1 / l1); //length((p0 + p1) / 2.0);
+            gl_TessLevelOuter[0] = 8.0 / (d2 / l2);
+            gl_TessLevelOuter[1] = 8.0 / (d3 / l3);
+            gl_TessLevelOuter[2] = 8.0 / (d1 / l1);
 
-            // Alternative method
+            // TODO: Alternative method
             //float f1 = abs(dot((p0 - p1), (p0 + p1)));
             //float f2 = abs(dot((p1 - p2), (p1 + p2)));
             //float f3 = abs(dot((p2 - p0), (p2 + p0)));

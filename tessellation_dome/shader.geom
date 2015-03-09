@@ -6,8 +6,8 @@
 #define NEAR 1.0
 #define FAR 100.0
 
-#define STEREO 1
-#define BASELINE 1
+#define STEREO true
+#define BASELINE 0.1
 #define RADIUS 10
 
 // Uniforms and inputs
@@ -22,9 +22,11 @@ in TES_OUT
 
 out GEOM_OUT
 {
-    vec4 vertex;
-    vec2 texCoord;
-    vec3 normal;
+    smooth vec4 vertex;
+    smooth vec4 spherical;
+    smooth vec2 texCoord;
+    smooth vec3 normal;
+    flat float eye;
 } geom_out;
 
 layout(triangles) in;
@@ -65,7 +67,7 @@ void toSphere(inout vec4 p)
     else
         phi = 2.0*PI - first;
 
-    if (STEREO == 1)
+    if (STEREO)
     {
         vec4 s = vec4(phi, theta, r, 1.0);
         toStereo(s);
@@ -79,11 +81,20 @@ void toSphere(inout vec4 p)
     o.y /= PI / (2.0 * 180.0) * FOV;
     o.x /= PI / (2.0 * 180.0) * FOV;
     o.z = (r - NEAR) / (FAR - NEAR);
+    if (length(o.xy) > 1.0)
+    {
+        o.z = -1.0;
+        o.w = 0.0;
+    }
+    else
+    {
+        o.w = 1.0;
+    }
 
     // Small work around to the depth testing which hides duplicate objects...
-    if (gl_InvocationID == 0 && STEREO == 1)
+    if (gl_InvocationID == 0 && STEREO)
         o.x = o.x / 2.0 - 0.5;
-    else if (STEREO == 1)
+    else if (STEREO)
         o.x = o.x / 2.0 + 0.5;
 
     p = o;
@@ -111,7 +122,7 @@ bool cull(in vec4 p[3])
     for (int i = 0; i < 3; ++i)
         toSphere(p[i]);
 
-    float limit = (STEREO == 1) ? 1.0 : 2.0;
+    float limit = STEREO ? 1.0 : 2.0;
 
     bool visible = true;
     for (int i = 0; i < 3; ++i)
@@ -126,7 +137,7 @@ bool cull(in vec4 p[3])
 bool doEmitVertex(in vec4 v)
 {
     // This prevents both views to draw in the other one...
-    if (STEREO == 1 && vPass == 0)
+    if (STEREO && vPass == 0)
         if ((gl_InvocationID == 0 && v.x > 0.0) || (gl_InvocationID == 1 && v.x < 0.0))
             return false;
     return true;
@@ -143,6 +154,7 @@ void main()
 
     vec4[3] domeVertices;
     domeVertices = vertices;
+    float eye = 0.0;
 
     if (vPass == 0)
     {
@@ -150,13 +162,19 @@ void main()
         toSphere(domeVertices[1]);
         toSphere(domeVertices[2]);
 
-        vec2 center = vec2(0.0);
-        if (STEREO == 1 && gl_InvocationID == 0)
-            center.x = -0.5;
-        else if (STEREO == 1 && gl_InvocationID == 1)
-            center.x = 0.5;
-        if (length(domeVertices[0].xy - center) > 1.0 || length(domeVertices[1].xy - center) > 1.0 || length(domeVertices[2].xy - center) > 1.0)
-            return;
+        // TODO: this is the first method used to get rid of unwanted faces
+        //vec2 center = vec2(0.0);
+        //if (STEREO && gl_InvocationID == 0)
+        //    center.x = -0.5;
+        //else if (STEREO && gl_InvocationID == 1)
+        //    center.x = 0.5;
+        //if (length(domeVertices[0].xy - center) > 1.0 || length(domeVertices[1].xy - center) > 1.0 || length(domeVertices[2].xy - center) > 1.0)
+        //    return;
+
+        if (STEREO && gl_InvocationID == 0)
+            eye = -1.0;
+        else if (STEREO && gl_InvocationID == 1)
+            eye = 1.0;
 
         for (int i = 0; i < 3; ++i)
             if (!doEmitVertex(domeVertices[i]))
@@ -164,22 +182,28 @@ void main()
     }
 
     gl_Position = domeVertices[0];
-    geom_out.texCoord = tes_out[0].texCoord;
     geom_out.vertex = tes_out[0].vertex;
+    geom_out.spherical = domeVertices[0];
+    geom_out.texCoord = tes_out[0].texCoord;
+    geom_out.eye = eye;
     geom_out.normal = normalize(cross((vertices[1] - vertices[0]).xyz, (vertices[2] - vertices[0]).xyz));
     EmitVertex();
 
     gl_Position = domeVertices[1];
-    geom_out.texCoord = tes_out[1].texCoord;
     geom_out.vertex = tes_out[1].vertex;
+    geom_out.spherical = domeVertices[1];
+    geom_out.texCoord = tes_out[1].texCoord;
     geom_out.normal = tes_out[2].normal;
+    geom_out.eye = eye;
     geom_out.normal = normalize(cross((vertices[1] - vertices[0]).xyz, (vertices[2] - vertices[0]).xyz));
     EmitVertex();
 
     gl_Position = domeVertices[2];
-    geom_out.texCoord = tes_out[2].texCoord;
     geom_out.vertex = tes_out[2].vertex;
+    geom_out.spherical = domeVertices[2];
+    geom_out.texCoord = tes_out[2].texCoord;
     geom_out.normal = tes_out[2].normal;
+    geom_out.eye = eye;
     geom_out.normal = normalize(cross((vertices[1] - vertices[0]).xyz, (vertices[2] - vertices[0]).xyz));
     EmitVertex();
 
