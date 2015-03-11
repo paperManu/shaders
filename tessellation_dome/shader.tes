@@ -28,12 +28,6 @@ out TES_OUT
 } tes_out;
 
 /***************/
-float sinCosRestrain(in float v)
-{
-    return max(-1.0, min(1.0, v));
-}
-
-/***************/
 vec4 toSphere(in vec4 v)
 {
     float val;
@@ -45,9 +39,9 @@ vec4 toSphere(in vec4 v)
 
     float phi;
     val = v.x / (r * sin(theta));
-    float first = acos(sinCosRestrain(val));
+    float first = acos(clamp(val, -1.0, 1.0));
     val = v.y / (r * sin(theta));
-    float second = asin(sinCosRestrain(val));
+    float second = asin(clamp(val, -1.0, 1.0));
     if (second >= 0.0)
         phi = first;
     else

@@ -3,8 +3,8 @@
 #define INV_PATTERN_WIDTH 3.0
 #define DISPLAY_PATTERN false
 
-#define STEREO true
-#define ANAGLYPH true
+#define STEREO false
+#define ANAGLYPH false
 
 uniform sampler2D vTexMap;
 uniform sampler2D vHUDMap;
@@ -81,13 +81,13 @@ void main(void)
                 fragColor.rgb = vec3(0.3, 0.0, 0.0) + fragColor.rgb * df * vec3(0.3, 0.9, 0.7);
             }
         }
-        else if (geom_out.eye == -1.0)
+        else if (geom_out.eye < 0.0)
         {
             // If left eye
             fragColor = texture2D(vTexMap, geom_out.texCoord);
             fragColor.rgb = vec3(0.3, 0.0, 0.0) + fragColor.rgb * df * vec3(0.3, 0.9, 0.7);
         }
-        else if (geom_out.eye == 1.0)
+        else if (geom_out.eye > 0.0)
         {
             // If right eye
             fragColor2 = texture2D(vTexMap, geom_out.texCoord);
