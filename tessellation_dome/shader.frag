@@ -58,12 +58,6 @@ void main(void)
     {
         //if (length(geom_out.spherical.w) == 0.0)
         //    discard;
-        fragColor.rgb = vec3(0.0);
-
-        // Color from normals
-        //fragColor = vec4(1.0);
-        //fragColor.rgb = (geom_out.vertex + vec3(1.0)) / 2.0;
-        //fragColor.rgb = geom_out.normal;
 
         // Lambert lighting
         vec3 N = geom_out.normal;
@@ -79,6 +73,10 @@ void main(void)
             {
                 fragColor = texture2D(vTexMap, geom_out.texCoord);
                 fragColor.rgb = vec3(0.3, 0.0, 0.0) + fragColor.rgb * df * vec3(0.3, 0.9, 0.7);
+
+                // Color from normals
+                //fragColor = vec4(1.0);
+                //fragColor.rgb = geom_out.normal;
             }
         }
         else if (geom_out.eye < 0.0)
@@ -86,12 +84,20 @@ void main(void)
             // If left eye
             fragColor = texture2D(vTexMap, geom_out.texCoord);
             fragColor.rgb = vec3(0.3, 0.0, 0.0) + fragColor.rgb * df * vec3(0.3, 0.9, 0.7);
+
+            // Color from normals
+            //fragColor = vec4(1.0);
+            //fragColor.rgb = geom_out.normal;
         }
         else if (geom_out.eye > 0.0)
         {
             // If right eye
             fragColor2 = texture2D(vTexMap, geom_out.texCoord);
             fragColor2.rgb = vec3(0.3, 0.0, 0.0) + fragColor2.rgb * df * vec3(0.3, 0.9, 0.7);
+
+            // Color from normals
+            //fragColor2 = vec4(1.0);
+            //fragColor2.rgb = geom_out.normal;
         }
     }
     else

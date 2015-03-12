@@ -50,38 +50,31 @@ void toStereo(inout vec4 v);
 void toSphere(inout vec4 p)
 {
     vec4 v = p;
+    vec3 spherical;
 
-    float val;
     vec4 o = vec4(1.0);
 
-    float r = sqrt(pow(v.x, 2.0) + pow(v.y, 2.0) + pow(v.z, 2.0));
-    val = clamp(v.z / r, -1.0, 1.0);
-    float theta = acos(val);
+    spherical.z = length(v.xyz);
+    spherical.y = acos(v.z / spherical.z);
 
-    float phi;
-    val = v.x / (r * sin(theta));
-    float first = acos(clamp(val, -1.0, 1.0));
-    val = v.y / (r * sin(theta));
-    float second = asin(clamp(val, -1.0, 1.0));
+    vec2 val = v.xy / (spherical.z * sin(spherical.y));
+    float first = acos(clamp(val.x, -1.0, 1.0));
+    float second = asin(clamp(val.y, -1.0, 1.0));
     if (second >= 0.0)
-        phi = first;
+        spherical.x = first;
     else
-        phi = 2.0*PI - first;
+        spherical.x = 2.0*PI - first;
 
     if (STEREO)
     {
-        vec4 s = vec4(phi, theta, r, 1.0);
+        vec4 s = vec4(spherical, 1.0);
         toStereo(s);
-        phi = s.x;
-        theta = s.y;
-        r = s.z;
+        spherical = s.xyz;
     }
 
-    o.x = theta * cos(phi);
-    o.y = theta * sin(phi);
-    o.y /= PI / (2.0 * 180.0) * FOV;
-    o.x /= PI / (2.0 * 180.0) * FOV;
-    o.z = (r - NEAR) / (FAR - NEAR);
+    o.xy = spherical.y * vec2(cos(spherical.x), sin(spherical.x));
+    o.xy /= PI / 360.0 * FOV;
+    o.z = (spherical.z - NEAR) / (FAR - NEAR);
 
     // Test whether this vertex should be drawn
     if (length(o.xy) > 1.0)
@@ -144,23 +137,18 @@ int doEmitVertex(inout vec4 v)
 void separateStereoViews(inout vec4 v)
 {
     // Small work around to the depth testing which hides duplicate objects...
-    if (gl_InvocationID == 0 && STEREO)
+    if (STEREO)
     {
         if (v.w < 0.0)
         {
             v.xy = normalize(v.xy);
             v.w = 1.0;
         }
-        v.x = v.x / 2.0 - 0.5;
-    }
-    else if (STEREO)
-    {
-        if (v.w < 0.0)
-        {
-            v.xy = normalize(v.xy);
-            v.w = 1.0;
-        }
-        v.x = v.x / 2.0 + 0.5;
+
+        if (gl_InvocationID == 0)
+            v.x = v.x / 2.0 - 0.5;
+        else
+            v.x = v.x / 2.0 + 0.5;
     }
 }
 
