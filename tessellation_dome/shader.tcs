@@ -1,5 +1,8 @@
 #version 430 core
 
+#define PI 3.141592653589
+#define FOV 210
+
 layout (vertices = 3) out;
 
 uniform vec4 vMVP;
@@ -17,6 +20,23 @@ out TCS_OUT
     vec3 normal;
 } tcs_out[];
 
+/***************/
+bool isVisible(in vec4 v)
+{
+    float val;
+    vec4 o = vec4(1.0);
+
+    float r = sqrt(pow(v.x, 2.0) + pow(v.y, 2.0) + pow(v.z, 2.0));
+    val = clamp(v.z / r, -1.0, 1.0);
+    float theta = acos(val);
+
+    if (theta <= FOV / 180.0 * PI)
+        return true;
+    else
+        return false;
+}
+
+/*************/
 void main(void)
 {
     if (gl_InvocationID == 0)
@@ -27,34 +47,49 @@ void main(void)
             vec4 p1 = gl_in[1].gl_Position;
             vec4 p2 = gl_in[2].gl_Position;
 
-            float l1 = length(p0 - p1);
-            float l2 = length(p1 - p2);
-            float l3 = length(p2 - p0);
+            // If a face is entirely invisible, there is no need to subdivide it
+            bool isFaceVisible = false;
+            for (int i = 0; i < 3; ++i)
+                isFaceVisible = isFaceVisible || isVisible(gl_in[0].gl_Position);
 
-            float d1 = length((p0 + p1) / 2.0);
-            float d2 = length((p1 + p2) / 2.0);
-            float d3 = length((p2 + p0) / 2.0);
+            if (isFaceVisible)
+            {
+                float l1 = length(p0 - p1);
+                float l2 = length(p1 - p2);
+                float l3 = length(p2 - p0);
 
-            vec4 center = (p0 + p1 + p2) / 3.0;
-            float faceDistance = length(center);
+                float d1 = length((p0 + p1) / 2.0);
+                float d2 = length((p1 + p2) / 2.0);
+                float d3 = length((p2 + p0) / 2.0);
 
-            gl_TessLevelInner[0] = 3.0 / (faceDistance / (l1 + l2 + l3));
-            gl_TessLevelOuter[0] = 8.0 / (d2 / l2);
-            gl_TessLevelOuter[1] = 8.0 / (d3 / l3);
-            gl_TessLevelOuter[2] = 8.0 / (d1 / l1);
+                vec4 center = (p0 + p1 + p2) / 3.0;
+                float faceDistance = length(center);
 
-            // TODO: Alternative method
-            //float f1 = abs(dot((p0 - p1), (p0 + p1)));
-            //float f2 = abs(dot((p1 - p2), (p1 + p2)));
-            //float f3 = abs(dot((p2 - p0), (p2 + p0)));
+                gl_TessLevelInner[0] = 2.0 / (faceDistance / (l1 + l2 + l3));
+                gl_TessLevelOuter[0] = 6.0 / (d2 / l2);
+                gl_TessLevelOuter[1] = 6.0 / (d3 / l3);
+                gl_TessLevelOuter[2] = 6.0 / (d1 / l1);
 
-            //vec4 center = (p0 + p1 + p2) / 3.0;
-            //float faceDistance = length(center);
+                // TODO: Alternative method
+                //float f1 = abs(dot((p0 - p1), (p0 + p1)));
+                //float f2 = abs(dot((p1 - p2), (p1 + p2)));
+                //float f3 = abs(dot((p2 - p0), (p2 + p0)));
 
-            //gl_TessLevelInner[0] = 1.0 / ((f1 + f2 + f3) / 3.0);
-            //gl_TessLevelOuter[0] = 1.0 / f2; //length((p1 + p2) / 2.0);
-            //gl_TessLevelOuter[1] = 1.0 / f3; //length((p2 + p0) / 2.0);
-            //gl_TessLevelOuter[2] = 1.0 / f1; //length((p0 + p1) / 2.0);
+                //vec4 center = (p0 + p1 + p2) / 3.0;
+                //float faceDistance = length(center);
+
+                //gl_TessLevelInner[0] = 1.0 / ((f1 + f2 + f3) / 3.0);
+                //gl_TessLevelOuter[0] = 1.0 / f2; //length((p1 + p2) / 2.0);
+                //gl_TessLevelOuter[1] = 1.0 / f3; //length((p2 + p0) / 2.0);
+                //gl_TessLevelOuter[2] = 1.0 / f1; //length((p0 + p1) / 2.0);
+            }
+            else
+            {
+                gl_TessLevelInner[0] = 1.0;
+                gl_TessLevelOuter[0] = 1.0;
+                gl_TessLevelOuter[1] = 1.0;
+                gl_TessLevelOuter[2] = 1.0;
+            }
         }
         else
         {

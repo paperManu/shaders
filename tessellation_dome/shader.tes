@@ -1,8 +1,8 @@
 #version 430 core
 
-#define FOV 260
-
 #define PI 3.141592653589
+
+#define FOV 210
 #define NEAR 1.0
 #define FAR 100.0
 

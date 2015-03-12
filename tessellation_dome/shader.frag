@@ -3,7 +3,7 @@
 #define INV_PATTERN_WIDTH 3.0
 #define DISPLAY_PATTERN false
 
-#define STEREO false
+#define STEREO true
 #define ANAGLYPH false
 
 uniform sampler2D vTexMap;

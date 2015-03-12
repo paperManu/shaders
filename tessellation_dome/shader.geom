@@ -1,13 +1,13 @@
 #version 430 core
 
-#define FOV 260
-
 #define PI 3.141592653589
+
+#define FOV 210
 #define NEAR 1.0
 #define FAR 100.0
 
 #define INVERT_DOME false
-#define STEREO false
+#define STEREO true
 #define BASELINE 0.1
 #define RADIUS 10
 
@@ -89,20 +89,6 @@ void toSphere(inout vec4 p)
     else
         o.w = 1.0;
 
-    // Small work around to the depth testing which hides duplicate objects...
-    if (gl_InvocationID == 0 && STEREO)
-    {
-        if (o.w < 0.0)
-            o.xy = normalize(o.xy);
-        o.x = o.x / 2.0 - 0.5;
-    }
-    else if (STEREO)
-    {
-        if (o.w < 0.0)
-            o.xy = normalize(o.xy);
-        o.x = o.x / 2.0 + 0.5;
-    }
-
     p = o;
 }
 
@@ -140,21 +126,42 @@ bool cull(in vec4 p[3])
 }
 
 /***************/
-bool doEmitVertex(inout vec4 v)
+int doEmitVertex(inout vec4 v)
 {
     // This prevents both views to draw in the other one...
-    if (STEREO && vPass == 0)
-        if ((gl_InvocationID == 0 && v.x > 0.0) || (gl_InvocationID == 1 && v.x < 0.0))
-            return false;
+    //if (STEREO && vPass == 0)
+    //    if ((gl_InvocationID == 0 && v.x > 0.0) || (gl_InvocationID == 1 && v.x < 0.0))
+    //        return false;
 
     // If this vertex is out of view, normalize it to be on the edge of the view
     if (v.w < 0.0)
-    {
-        v.w = 1.0;
-        return false;
-    }
+        return 0;
 
-    return true;
+    return 1;
+}
+
+/***************/
+void separateStereoViews(inout vec4 v)
+{
+    // Small work around to the depth testing which hides duplicate objects...
+    if (gl_InvocationID == 0 && STEREO)
+    {
+        if (v.w < 0.0)
+        {
+            v.xy = normalize(v.xy);
+            v.w = 1.0;
+        }
+        v.x = v.x / 2.0 - 0.5;
+    }
+    else if (STEREO)
+    {
+        if (v.w < 0.0)
+        {
+            v.xy = normalize(v.xy);
+            v.w = 1.0;
+        }
+        v.x = v.x / 2.0 + 0.5;
+    }
 }
 
 /***************/
@@ -199,11 +206,15 @@ void main()
             eye = 1.0;
 
         int doEmit = 0;
-        for (int i = 0; i < 3; ++i)
-            if (doEmitVertex(domeVertices[i]))
-                doEmit++;
+        doEmit += doEmitVertex(domeVertices[0]);
+        doEmit += doEmitVertex(domeVertices[1]);
+        doEmit += doEmitVertex(domeVertices[2]);
         if (doEmit == 0)
             return;
+
+        separateStereoViews(domeVertices[0]);
+        separateStereoViews(domeVertices[1]);
+        separateStereoViews(domeVertices[2]);
 
 #if INVERT_DOME
         for (int i = 2; i >= 0; --i)
