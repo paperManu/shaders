@@ -24,7 +24,6 @@ in TES_OUT
 out GEOM_OUT
 {
     smooth vec4 vertex;
-    smooth vec4 spherical;
     smooth vec2 texCoord;
     smooth vec3 normal;
     flat float eye;
@@ -32,7 +31,7 @@ out GEOM_OUT
 
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
-layout(invocations = 2) in;
+layout(invocations = 2) in; // Uncomment for stereo view
 
 // Types
 struct Point
@@ -44,7 +43,7 @@ struct Point
 };
 
 // Declaration
-void toStereo(inout vec4 v);
+void toStereo(inout vec3 v);
 
 /***************/
 void toSphere(inout vec4 p)
@@ -67,9 +66,9 @@ void toSphere(inout vec4 p)
 
     if (STEREO)
     {
-        vec4 s = vec4(spherical, 1.0);
-        toStereo(s);
-        spherical = s.xyz;
+        //vec4 s = vec4(spherical, 1.0);
+        toStereo(spherical.xyz);
+        //spherical = s.xyz;
     }
 
     o.xy = spherical.y * vec2(cos(spherical.x), sin(spherical.x));
@@ -86,7 +85,7 @@ void toSphere(inout vec4 p)
 }
 
 /***************/
-void toStereo(inout vec4 v)
+void toStereo(inout vec3 v)
 {
     float b = BASELINE;
     float r = RADIUS;
@@ -98,37 +97,17 @@ void toStereo(inout vec4 v)
     else
         theta = atan(-b * (d - r) / (d * r)) * (1 - cos(v.y));
 
-    v = vec4(v.x + theta, v.yzw);
-}
-
-/***************/
-bool cull(in vec4 p[3])
-{
-    for (int i = 0; i < 3; ++i)
-        toSphere(p[i]);
-
-    float limit = STEREO ? 1.0 : 2.0;
-
-    bool visible = true;
-    for (int i = 0; i < 3; ++i)
-    {
-        if (abs(p[i].x - p[(i+1)%3].x) > limit || abs(p[i].y - p[(i+1)%3].y) > limit)
-            visible = false;
-    }
-    return !visible;
+    v = vec3(v.x + theta, v.yz);
 }
 
 /***************/
 int doEmitVertex(inout vec4 v)
 {
-    // This prevents both views to draw in the other one...
-    //if (STEREO && vPass == 0)
-    //    if ((gl_InvocationID == 0 && v.x > 0.0) || (gl_InvocationID == 1 && v.x < 0.0))
-    //        return false;
-
-    // If this vertex is out of view, normalize it to be on the edge of the view
     if (v.w < 0.0)
+    {
+        v.w = 1.0;
         return 0;
+    }
 
     return 1;
 }
@@ -139,12 +118,6 @@ void separateStereoViews(inout vec4 v)
     // Small work around to the depth testing which hides duplicate objects...
     if (STEREO)
     {
-        if (v.w < 0.0)
-        {
-            v.xy = normalize(v.xy);
-            v.w = 1.0;
-        }
-
         if (gl_InvocationID == 0)
             v.x = v.x / 2.0 - 0.5;
         else
@@ -179,15 +152,6 @@ void main()
         toSphere(domeVertices[1]);
         toSphere(domeVertices[2]);
 
-        // TODO: this is the first method used to get rid of unwanted faces
-        //vec2 center = vec2(0.0);
-        //if (STEREO && gl_InvocationID == 0)
-        //    center.x = -0.5;
-        //else if (STEREO && gl_InvocationID == 1)
-        //    center.x = 0.5;
-        //if (length(domeVertices[0].xy - center) > 1.0 || length(domeVertices[1].xy - center) > 1.0 || length(domeVertices[2].xy - center) > 1.0)
-        //    return;
-
         if (STEREO && gl_InvocationID == 0)
             eye = -1.0;
         else if (STEREO && gl_InvocationID == 1)
@@ -209,7 +173,6 @@ void main()
         {
             gl_Position = domeVertices[i];
             geom_out.vertex = tes_out[i].vertex;
-            geom_out.spherical = domeVertices[i];
             geom_out.texCoord = tes_out[i].texCoord;
             geom_out.eye = eye;
             geom_out.normal = normalize(cross((vertices[1] - vertices[0]).xyz, (vertices[2] - vertices[0]).xyz));
@@ -220,7 +183,6 @@ void main()
         {
             gl_Position = domeVertices[i];
             geom_out.vertex = tes_out[i].vertex;
-            geom_out.spherical = domeVertices[i];
             geom_out.texCoord = tes_out[i].texCoord;
             geom_out.eye = eye;
             geom_out.normal = normalize(cross((vertices[1] - vertices[0]).xyz, (vertices[2] - vertices[0]).xyz));

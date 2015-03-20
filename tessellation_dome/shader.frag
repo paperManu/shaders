@@ -19,7 +19,6 @@ uniform int vPass;
 in GEOM_OUT
 {
     vec4 vertex;
-    vec4 spherical;
     vec2 texCoord;
     vec3 normal;
     float eye;
@@ -52,13 +51,10 @@ vec4 drawPattern()
 /*************/
 void main(void)
 {
-    fragColor = vec4(1.0);
+    fragColor = vec4(0.0);
 
     if (vPass == 0)
     {
-        //if (length(geom_out.spherical.w) == 0.0)
-        //    discard;
-
         // Lambert lighting
         vec3 N = geom_out.normal;
         vec3 L = normalize(vec3(sin(0.5), cos(0.5 * 1.5), 1.0));
@@ -67,20 +63,17 @@ void main(void)
         if (geom_out.eye == 0.0)
         {
             // If no stereo output
-            if (length(gl_FragCoord.xy / vResolution - vec2(0.5, 0.5)) >= 0.5)
-                fragColor = vec4(0.0, 0.0, 0.0, 1.0);
-            else
-            {
-                fragColor = texture2D(vTexMap, geom_out.texCoord);
-                fragColor.rgb = vec3(0.3, 0.0, 0.0) + fragColor.rgb * df * vec3(0.3, 0.9, 0.7);
-
-                // Color from normals
-                //fragColor = vec4(1.0);
-                //fragColor.rgb = geom_out.normal;
-            }
+            if (length(gl_FragCoord.xy / vResolution - vec2(0.5, 0.5)) > 0.5)
+                discard;
+            fragColor = texture2D(vTexMap, geom_out.texCoord);
+            fragColor.rgb = vec3(0.3, 0.0, 0.0) + fragColor.rgb * df * vec3(0.3, 0.9, 0.7);
         }
         else if (geom_out.eye < 0.0)
         {
+            //if (length((gl_FragCoord.xy / vResolution - vec2(0.25, 0.5)) * vec2(1.0, 0.5)) > 0.25)
+            //    discard;
+            if (gl_FragCoord.x / vResolution.x > 0.5)
+                discard;
             // If left eye
             fragColor = texture2D(vTexMap, geom_out.texCoord);
             fragColor.rgb = vec3(0.3, 0.0, 0.0) + fragColor.rgb * df * vec3(0.3, 0.9, 0.7);
@@ -91,6 +84,10 @@ void main(void)
         }
         else if (geom_out.eye > 0.0)
         {
+            //if (length((gl_FragCoord.xy / vResolution - vec2(0.75, 0.5)) * vec2(1.0, 0.5)) > 0.25)
+            //    discard;
+            if (gl_FragCoord.x / vResolution.x < 0.5)
+                discard;
             // If right eye
             fragColor2 = texture2D(vTexMap, geom_out.texCoord);
             fragColor2.rgb = vec3(0.3, 0.0, 0.0) + fragColor2.rgb * df * vec3(0.3, 0.9, 0.7);
@@ -109,7 +106,6 @@ void main(void)
         }
         else if (STEREO && !ANAGLYPH)
         {
-            fragColor = vec4(0.0);
             if (pos.x < 0.5 && length((pos - vec2(0.25, 0.5)) * vec2(1.0, 0.5)) < 0.25)
                 fragColor = texture2D(vFBOMap, geom_out.texCoord);
             else if (length((pos - vec2(0.75, 0.5)) * vec2(1.0, 0.5)) < 0.25)
@@ -117,7 +113,6 @@ void main(void)
         }
         else if (STEREO && ANAGLYPH)
         {
-            fragColor = vec4(0.0);
             if (length(pos - vec2(0.5, 0.5)) <= 0.5)
             {
                 fragColor = vec4(1.0, 0.0, 0.0, 1.0) * texture2D(vFBOMap, vec2(pos.x * 0.5, pos.y));

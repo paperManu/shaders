@@ -26,9 +26,8 @@ bool isVisible(in vec4 v)
     float val;
     vec4 o = vec4(1.0);
 
-    float r = sqrt(pow(v.x, 2.0) + pow(v.y, 2.0) + pow(v.z, 2.0));
-    val = clamp(v.z / r, -1.0, 1.0);
-    float theta = acos(val);
+    float r = length(v.xyz);
+    float theta = acos(v.z / r);
 
     if (theta <= FOV / 180.0 * PI)
         return true;
@@ -50,38 +49,30 @@ void main(void)
             // If a face is entirely invisible, there is no need to subdivide it
             bool isFaceVisible = false;
             for (int i = 0; i < 3; ++i)
-                isFaceVisible = isFaceVisible || isVisible(gl_in[0].gl_Position);
+                isFaceVisible = isFaceVisible || isVisible(gl_in[i].gl_Position);
 
             if (isFaceVisible)
             {
-                float l1 = length(p0 - p1);
-                float l2 = length(p1 - p2);
-                float l3 = length(p2 - p0);
+                float l1 = distance(p0, p1);
+                float l2 = distance(p1, p2);
+                float l3 = distance(p2, p0);
 
-                float d1 = length((p0 + p1) / 2.0);
-                float d2 = length((p1 + p2) / 2.0);
-                float d3 = length((p2 + p0) / 2.0);
+                float d1 = length((p0 + p1).xyz) / 2.0;
+                float d2 = length((p1 + p2).xyz) / 2.0;
+                float d3 = length((p2 + p0).xyz) / 2.0;
 
+                // TODO: Prefered method (yet)
+                #define INNER_TESS_COEFF 20.0
+                #define OUTER_TESS_COEFF 6.0
                 vec4 center = (p0 + p1 + p2) / 3.0;
                 float faceDistance = length(center);
+                float faceSValue = (l1 + l2 + l3) / 2.0;
+                float faceArea = sqrt(faceSValue * (faceSValue - l1) * (faceSValue - l2) * (faceSValue - l3));
 
-                gl_TessLevelInner[0] = 2.0 / (faceDistance / (l1 + l2 + l3));
-                gl_TessLevelOuter[0] = 6.0 / (d2 / l2);
-                gl_TessLevelOuter[1] = 6.0 / (d3 / l3);
-                gl_TessLevelOuter[2] = 6.0 / (d1 / l1);
-
-                // TODO: Alternative method
-                //float f1 = abs(dot((p0 - p1), (p0 + p1)));
-                //float f2 = abs(dot((p1 - p2), (p1 + p2)));
-                //float f3 = abs(dot((p2 - p0), (p2 + p0)));
-
-                //vec4 center = (p0 + p1 + p2) / 3.0;
-                //float faceDistance = length(center);
-
-                //gl_TessLevelInner[0] = 1.0 / ((f1 + f2 + f3) / 3.0);
-                //gl_TessLevelOuter[0] = 1.0 / f2; //length((p1 + p2) / 2.0);
-                //gl_TessLevelOuter[1] = 1.0 / f3; //length((p2 + p0) / 2.0);
-                //gl_TessLevelOuter[2] = 1.0 / f1; //length((p0 + p1) / 2.0);
+                gl_TessLevelInner[0] = INNER_TESS_COEFF / (faceDistance * faceDistance) * faceArea;
+                gl_TessLevelOuter[0] = OUTER_TESS_COEFF / d2 * l2;
+                gl_TessLevelOuter[1] = OUTER_TESS_COEFF / d3 * l3;
+                gl_TessLevelOuter[2] = OUTER_TESS_COEFF / d1 * l1;
             }
             else
             {
