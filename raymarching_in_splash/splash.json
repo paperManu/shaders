@@ -1,0 +1,131 @@
+{
+   "description" : "splashConfiguration",
+   // Default encoding for text
+   "encoding" : "UTF-8",
+   "scenes" : {
+      "local" : {
+         "address" : "localhost",
+         "links" : [
+            [ "gui", "win1" ],
+            [ "filter_1", "win1" ]
+         ],
+         "objects" : {
+            "blender" : {
+               "alias" : [ "blender" ],
+               "mode" : [ "none" ],
+               "priorityShift" : [ 0 ],
+               "savable" : [ 1 ],
+               "timestamp" : [ 0 ],
+               "type" : "blender"
+            },
+            "colorCalibrator" : {
+               "alias" : [ "colorCalibrator" ],
+               "colorSamples" : [ 5 ],
+               "detectionThresholdFactor" : [ 1 ],
+               "equalizeMethod" : [ 2 ],
+               "hdrStep" : [ 1 ],
+               "imagePerHDR" : [ 1 ],
+               "priorityShift" : [ 0 ],
+               "savable" : [ 1 ],
+               "timestamp" : [ 0 ],
+               "type" : "colorCalibrator"
+            },
+            "dragndrop" : {
+               "alias" : [ "dragndrop" ],
+               "priorityShift" : [ 0 ],
+               "savable" : [ 1 ],
+               "timestamp" : [ 0 ],
+               "type" : "dragndrop",
+               "updateRate" : [ 10 ]
+            },
+            "filter_1" : {
+               "alias" : [ "shader\u0000" ],
+               "blackLevel" : [ 0 ],
+               "blackLevelAuto" : [ 0, 1 ],
+               "brightness" : [ 1 ],
+               "buffer" : [ 0 ],
+               "colorCurveAnchors" : [ 0 ],
+               "colorTemperature" : [ 6500 ],
+               "contrast" : [ 1 ],
+               "fileFilterSource" : [ "/home/manu/src/shaders/raymarching_in_splash/shader.frag\u0000" ],
+               "filterSource" : [ "" ],
+               "grabMipmapLevel" : [ -1 ],
+               "invertChannels" : [ 0 ],
+               "keepRatio" : [ 0 ],
+               "priorityShift" : [ 0 ],
+               "saturation" : [ 1 ],
+               "savable" : [ 1 ],
+               "scale" : [ 1, 1 ],
+               "size" : [ 0, 0 ],
+               "sizeOverride" : [ 2048, 2048 ],
+               "spherical" : [ 1 ],
+               "timestamp" : [ 0 ],
+               "type" : "filter",
+               "watchShaderFile" : [ 1 ]
+            },
+            "gui" : {
+               "alias" : [ "gui" ],
+               "fullscreen" : [ 1 ],
+               "priorityShift" : [ 0 ],
+               "savable" : [ 1 ],
+               "timestamp" : [ 0 ],
+               "type" : "gui"
+            },
+            "joystick" : {
+               "alias" : [ "joystick" ],
+               "priorityShift" : [ 0 ],
+               "savable" : [ 1 ],
+               "timestamp" : [ 0 ],
+               "type" : "joystick",
+               "updateRate" : [ 100 ]
+            },
+            "keyboard" : {
+               "alias" : [ "keyboard" ],
+               "priorityShift" : [ 0 ],
+               "savable" : [ 1 ],
+               "timestamp" : [ 0 ],
+               "type" : "keyboard",
+               "updateRate" : [ 100 ]
+            },
+            "mouse" : {
+               "alias" : [ "mouse" ],
+               "priorityShift" : [ 0 ],
+               "savable" : [ 1 ],
+               "timestamp" : [ 0 ],
+               "type" : "mouse",
+               "updateRate" : [ 100 ]
+            },
+            "win1" : {
+               "alias" : [ "win1" ],
+               "decorated" : [ 1 ],
+               "gamma" : [ 2.2000000476837158 ],
+               "guiOnly" : [ 0 ],
+               "layout" : [ 0, 1, 2, 3 ],
+               "position" : [ 611, 17 ],
+               "presentationDelay" : [ 1875399917 ],
+               "priorityShift" : [ 0 ],
+               "savable" : [ 1 ],
+               "size" : [ 951, 1032 ],
+               "srgb" : [ 1 ],
+               "textureList" : [ "filter_1" ],
+               "timestamp" : [ 0 ],
+               "type" : "window"
+            }
+         },
+         "spawn" : 1,
+         "swapInterval" : [ 1 ],
+         "threadedTextureUpload" : [ 0 ]
+      }
+   },
+   "version" : "0.8.2",
+   "world" : {
+      "clock" : [ 1875388780 ],
+      "clockDeviceName" : [ "" ],
+      "configurationPath" : [ "/home/manu/src/shaders/raymarching_in_splash/" ],
+      "forceRealtime" : [ 0 ],
+      "framerate" : [ 60 ],
+      "looseClock" : [ 0 ],
+      "masterClock" : [ 0, 0, 0, 31, 68, 55, 92, 0 ],
+      "mediaPath" : [ "/home/manu/src/splash/data/" ]
+   }
+}
